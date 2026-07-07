@@ -1,0 +1,77 @@
+#include <stdlib.h>
+#include <string.h>
+
+
+typedef struct TrieNode {
+    struct TrieNode* children[26];
+    int count; 
+} TrieNode;
+
+
+TrieNode* createNode() {
+    TrieNode* node = (TrieNode*)malloc(sizeof(TrieNode));
+    node->count = 0;
+    for (int i = 0; i < 26; i++) {
+        node->children[i] = NULL;
+    }
+    return node;
+}
+
+
+void insert(TrieNode* root, char* word) {
+    TrieNode* curr = root;
+    for (int i = 0; word[i] != '\0'; i++) {
+        int idx = word[i] - 'a';
+        if (curr->children[idx] == NULL) {
+            curr->children[idx] = createNode();
+        }
+        curr = curr->children[idx];
+        curr->count++;
+    }
+}
+
+
+int getScore(TrieNode* root, char* word) {
+    TrieNode* curr = root;
+    int total_score = 0;
+    for (int i = 0; word[i] != '\0'; i++) {
+        int idx = word[i] - 'a';
+        curr = curr->children[idx];
+        total_score += curr->count; 
+    }
+    return total_score;
+}
+
+
+void freeTrie(TrieNode* root) {
+    if (root == NULL) return;
+    for (int i = 0; i < 26; i++) {
+        if (root->children[i] != NULL) {
+            freeTrie(root->children[i]);
+        }
+    }
+    free(root);
+}
+
+int* sumPrefixScores(char** words, int wordsSize, int* returnSize) {
+    TrieNode* root = createNode();
+    
+   
+    for (int i = 0; i < wordsSize; i++) {
+        insert(root, words[i]);
+    }
+    
+  
+    int* answer = (int*)malloc(wordsSize * sizeof(int));
+    *returnSize = wordsSize;
+    
+   
+    for (int i = 0; i < wordsSize; i++) {
+        answer[i] = getScore(root, words[i]);
+    }
+    
+   
+    freeTrie(root);
+    
+    return answer;
+}
