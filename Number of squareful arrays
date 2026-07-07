@@ -1,0 +1,56 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <stdbool.h>
+
+int compare(const void* a, const void* b) {
+    return (*(int*)a - *(int*)b);
+}
+
+
+bool isSquare(long long n) {
+    long long r = (long long)sqrt(n);
+    return (r * r == n);
+}
+
+void backtrack(int* nums, int n, int* last_val, bool* visited, int count, int* total_permutations) {
+    if (count == n) {
+        (*total_permutations)++;
+        return;
+    }
+
+    for (int i = 0; i < n; i++) {
+        if (visited[i]) continue;
+        
+       
+        if (i > 0 && nums[i] == nums[i - 1] && !visited[i - 1]) continue;
+
+        if (last_val != NULL && !isSquare((long long)nums[i] + *last_val)) {
+            continue;
+        }
+
+        
+        visited[i] = true;
+        int current_val = nums[i];
+
+        backtrack(nums, n, &current_val, visited, count + 1, total_permutations);
+
+        
+        visited[i] = false;
+    }
+}
+
+
+int numSquarefulPerms(int* nums, int numsSize) {
+  
+    qsort(nums, numsSize, sizeof(int), compare);
+
+    bool* visited = (bool*)calloc(numsSize, sizeof(bool));
+    int total_permutations = 0;
+
+   
+    backtrack(nums, numsSize, NULL, visited, 0, &total_permutations);
+
+    free(visited);
+    return total_permutations;
+}
