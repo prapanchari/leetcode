@@ -1,0 +1,51 @@
+#include <string.h>
+#include <stdlib.h>
+
+long long sumScores(char* s) {
+    int n = strlen(s);
+    
+    int* z = (int*)calloc(n, sizeof(int));
+    
+   
+    int left = 0;
+    int right = 0;
+    
+    
+    long long total_score = n; 
+    
+    for (int i = 1; i < n; i++) {
+       
+        if (i <= right) {
+            
+            int k = i - left;
+            if (z[k] < right - i + 1) {
+                z[i] = z[k];
+            } else {
+                
+                left = i;
+                while (right < n && s[right] == s[right - left]) {
+                    right++;
+                }
+                z[i] = right - left;
+                right--;
+            }
+        } else {
+            
+            left = i;
+            right = i;
+            while (right < n && s[right] == s[right - left]) {
+                right++;
+            }
+            z[i] = right - left;
+            right--;
+        }
+        
+        
+        total_score += z[i];
+    }
+    
+   
+    free(z);
+    
+    return total_score;
+}
