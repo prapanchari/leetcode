@@ -1,0 +1,51 @@
+#include <stdint.h>
+
+long long gcd(long long a, long long b) {
+    while (b != 0) {
+        long long temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
+
+int isValid(long long mid, long long div1, long long div2, long long lcm, long long cnt1, long long cnt2) {
+    
+    long long available_for_arr1 = mid - (mid / div1);
+    
+    long long available_for_arr2 = mid - (mid / div2);
+    
+    long long available_total = mid - (mid / lcm);
+
+    return (available_for_arr1 >= cnt1) && 
+           (available_for_arr2 >= cnt2) && 
+           (available_total >= cnt1 + cnt2);
+}
+
+int minimizeSet(int divisor1, int divisor2, int uniqueCnt1, int uniqueCnt2) {
+    long long div1 = divisor1;
+    long long div2 = divisor2;
+    long long cnt1 = uniqueCnt1;
+    long long cnt2 = uniqueCnt2;
+
+    long long lcm = (div1 * div2) / gcd(div1, div2);
+
+  
+    long long low = 1;
+    long long high = 2000000000LL; 
+    long long answer = high;
+
+    while (low <= high) {
+        long long mid = low + (high - low) / 2;
+
+        if (isValid(mid, div1, div2, lcm, cnt1, cnt2)) {
+            answer = mid;       
+            high = mid - 1;    
+        } else {
+            low = mid + 1;     
+        }
+    }
+
+    return (int)answer;
+}
