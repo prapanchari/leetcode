@@ -1,0 +1,42 @@
+include <stdio.h>
+
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+int maxNonDecreasingLength(int* nums1, int nums1Size, int* nums2, int nums2Size) {
+    int n = nums1Size;
+    
+    int dp1 = 1; 
+    int dp2 = 1;
+    
+    int max_len = 1; 
+    
+    for (int i = 1; i < n; i++) {
+        int next_dp1 = 1; 
+        int next_dp2 = 1; 
+        
+        
+        if (nums1[i] >= nums1[i - 1]) {
+            next_dp1 = MAX(next_dp1, dp1 + 1);
+        }
+        if (nums1[i] >= nums2[i - 1]) {
+            next_dp1 = MAX(next_dp1, dp2 + 1);
+        }
+        
+        
+        if (nums2[i] >= nums1[i - 1]) {
+            next_dp2 = MAX(next_dp2, dp1 + 1);
+        }
+        if (nums2[i] >= nums2[i - 1]) {
+            next_dp2 = MAX(next_dp2, dp2 + 1);
+        }
+        
+        
+        dp1 = next_dp1;
+        dp2 = next_dp2;
+        
+        
+        max_len = MAX(max_len, MAX(dp1, dp2));
+    }
+    
+    return max_len;
+}
