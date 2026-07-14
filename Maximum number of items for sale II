@@ -1,0 +1,99 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+typedef struct {
+    int price;
+    int max_free_deals;
+} Deal;
+
+
+int compareDeals(const void* a, const void* b) {
+    Deal* deal1 = (Deal*)a;
+    Deal* deal2 = (Deal*)b;
+    return deal1->price - deal2->price;
+}
+
+int maximumSaleItems(int** items, int itemsSize, int* itemsColSize, int budget) {
+    if (itemsSize == 0) return 0;
+
+    int cheapest_price = 2e9; 
+    int max_factor = 0;
+    for (int i = 0; i < itemsSize; i++) {
+        int factor = items[i][0];
+        int price = items[i][1];
+        if (price < cheapest_price) {
+            cheapest_price = price;
+        }
+        if (factor > max_factor) {
+            max_factor = factor;
+        }
+    }
+
+    int* factor_count = (int*)calloc(max_factor + 1, sizeof(int));
+    for (int i = 0; i < itemsSize; i++) {
+        factor_count[items[i][0]]++;
+    }
+
+  
+    int* multiples_count = (int*)calloc(max_factor + 1, sizeof(int));
+    for (int i = 1; i <= max_factor; i++) {
+        if (factor_count[i] > 0) {
+           
+            for (int j = i; j <= max_factor; j += i) {
+                multiples_count[i] += factor_count[j];
+            }
+        }
+    }
+
+   
+    Deal* deals = (Deal*)malloc(itemsSize * sizeof(Deal));
+    int deals_count = 0;
+
+    for (int i = 0; i < itemsSize; i++) {
+        int factor = items[i][0];
+        int price = items[i][1];
+
+       
+        if (price >= cheapest_price * 2) {
+            continue;
+        }
+
+        
+        int free_limit = multiples_count[factor] - 1;
+        if (free_limit > 0) {
+            deals[deals_count].price = price;
+            deals[deals_count].max_free_deals = free_limit;
+            deals_count++;
+        }
+    }
+
+
+    qsort(deals, deals_count, sizeof(Deal), compareDeals);
+
+    int total_items_obtained = 0;
+
+    for (int i = 0; i < deals_count; i++) {
+        if (budget < deals[i].price) {
+            break;
+        }
+
+        int max_affordable = budget / deals[i].price;
+        int copies_to_buy = MIN(deals[i].max_free_deals, max_affordable);
+
+        budget -= copies_to_buy * deals[i].price;
+        total_items_obtained += copies_to_buy * 2;
+    }
+
+
+    total_items_obtained += (budget / cheapest_price);
+
+    free(factor_count);
+    free(multiples_count);
+    free(deals);
+
+    return total_items_obtained;
+}
