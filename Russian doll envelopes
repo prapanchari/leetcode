@@ -1,0 +1,42 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int compare(const void* a, const void* b) {
+    int* env1 = *(int**)a;
+    int* env2 = *(int**)b;
+    if (env1[0] != env2[0]) {
+        return env1[0] - env2[0];
+    }
+    return env2[1] - env1[1];
+}
+
+int maxEnvelopes(int** envelopes, int envelopesSize, int* envelopesColSize) {
+    if (envelopesSize == 0) return 0;
+    
+    qsort(envelopes, envelopesSize, sizeof(int*), compare);
+    
+    int* tails = (int*)malloc(envelopesSize * sizeof(int));
+    int len = 0;
+    
+    for (int i = 0; i < envelopesSize; i++) {
+        int height = envelopes[i][1];
+        int left = 0, right = len;
+        
+        while (left < right) {
+            int mid = left + (right - left) / 2;
+            if (tails[mid] < height) {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+        
+        tails[left] = height;
+        if (left == len) {
+            len++;
+        }
+    }
+    
+    free(tails);
+    return len;
+}
