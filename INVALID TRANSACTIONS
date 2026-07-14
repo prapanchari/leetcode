@@ -1,0 +1,80 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+typedef struct {
+    char name[12];
+    int time;
+    int amount;
+    char city[12];
+    int original_index;
+} Transaction;
+
+char** invalidTransactions(char** transactions, int transactionsSize, int* returnSize) {
+    Transaction* t = (Transaction*)malloc(transactionsSize * sizeof(Transaction));
+
+    bool* is_invalid = (bool*)calloc(transactionsSize, sizeof(bool));
+    
+   
+    for (int i = 0; i < transactionsSize; i++) {
+        t[i].original_index = i;
+    
+        sscanf(transactions[i], "%[^,],%d,%d,%[^,]", t[i].name, &t[i].time, &t[i].amount, t[i].city);
+    }
+    
+    
+    for (int i = 0; i < transactionsSize; i++) {
+       
+        if (t[i].amount > 1000) {
+            is_invalid[i] = true;
+        }
+        
+        
+        for (int j = 0; j < transactionsSize; j++) {
+            if (i == j) continue;
+            
+            
+            if (strcmp(t[i].name, t[j].name) == 0) {
+               
+                if (strcmp(t[i].city, t[j].city) != 0) {
+                    
+                    if (abs(t[i].time - t[j].time) <= 60) {
+                        is_invalid[i] = true;
+                        is_invalid[j] = true; 
+                    }
+                }
+            }
+        }
+    }
+    
+    
+    int count = 0;
+    for (int i = 0; i < transactionsSize; i++) {
+        if (is_invalid[i]) {
+            count++;
+        }
+    }
+    
+    *returnSize = count;
+    if (count == 0) {
+        free(t);
+        free(is_invalid);
+        return NULL;
+    }
+    
+    char** result = (char**)malloc(count * sizeof(char*));
+    int idx = 0;
+    for (int i = 0; i < transactionsSize; i++) {
+        if (is_invalid[i]) {
+            
+            result[idx++] = strdup(transactions[i]);
+        }
+    }
+    
+    
+    free(t);
+    free(is_invalid);
+    
+    return result;
+}
