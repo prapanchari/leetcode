@@ -1,0 +1,27 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
+
+bool carPooling(int** trips, int tripsSize, int* tripsColSize, int capacity) {
+    int timeline[1001];
+    memset(timeline, 0, sizeof(timeline));
+    
+    for (int i = 0; i < tripsSize; i++) {
+        int passengers = trips[i][0];
+        int from = trips[i][1];
+        int to = trips[i][2];
+        
+        timeline[from] += passengers;
+        timeline[to] -= passengers;
+    }
+    
+    int current_passengers = 0;
+    for (int i = 0; i <= 1000; i++) {
+        current_passengers += timeline[i];
+        if (current_passengers > capacity) {
+            return false;
+        }
+    }
+    
+    return true;
+}
