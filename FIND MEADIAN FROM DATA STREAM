@@ -1,0 +1,125 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+    int* data;
+    int size;
+    int capacity;
+} Heap;
+
+Heap* createHeap(int capacity) {
+    Heap* h = (Heap*)malloc(sizeof(Heap));
+    h->data = (int*)malloc(capacity * sizeof(int));
+    h->size = 0;
+    h->capacity = capacity;
+    return h;
+}
+
+void swap(int* a, int* b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void pushMaxHeap(Heap* h, int val) {
+    h->data[h->size] = val;
+    int i = h->size;
+    h->size++;
+    while (i > 0) {
+        int p = (i - 1) / 2;
+        if (h->data[p] >= h->data[i]) break;
+        swap(&h->data[p], &h->data[i]);
+        i = p;
+    }
+}
+
+int popMaxHeap(Heap* h) {
+    int res = h->data[0];
+    h->size--;
+    h->data[0] = h->data[h->size];
+    int i = 0;
+    while (2 * i + 1 < h->size) {
+        int left = 2 * i + 1;
+        int right = 2 * i + 2;
+        int largest = left;
+        if (right < h->size && h->data[right] > h->data[left]) {
+            largest = right;
+        }
+        if (h->data[i] >= h->data[largest]) break;
+        swap(&h->data[i], &h->data[largest]);
+        i = largest;
+    }
+    return res;
+}
+
+void pushMinHeap(Heap* h, int val) {
+    h->data[h->size] = val;
+    int i = h->size;
+    h->size++;
+    while (i > 0) {
+        int p = (i - 1) / 2;
+        if (h->data[p] <= h->data[i]) break;
+        swap(&h->data[p], &h->data[i]);
+        i = p;
+    }
+}
+
+int popMinHeap(Heap* h) {
+    int res = h->data[0];
+    h->size--;
+    h->data[0] = h->data[h->size];
+    int i = 0;
+    while (2 * i + 1 < h->size) {
+        int left = 2 * i + 1;
+        int right = 2 * i + 2;
+        int smallest = left;
+        if (right < h->size && h->data[right] < h->data[left]) {
+            smallest = right;
+        }
+        if (h->data[i] <= h->data[smallest]) break;
+        swap(&h->data[i], &h->data[smallest]);
+        i = smallest;
+    }
+    return res;
+}
+
+typedef struct {
+    Heap* maxHeap;
+    Heap* minHeap;
+} MedianFinder;
+
+MedianFinder* medianFinderCreate() {
+    MedianFinder* obj = (MedianFinder*)malloc(sizeof(MedianFinder));
+    obj->maxHeap = createHeap(50005);
+    obj->minHeap = createHeap(50005);
+    return obj;
+}
+
+void medianFinderAddNum(MedianFinder* obj, int num) {
+    if (obj->maxHeap->size == 0 || num <= obj->maxHeap->data[0]) {
+        pushMaxHeap(obj->maxHeap, num);
+    } else {
+        pushMinHeap(obj->minHeap, num);
+    }
+
+    if (obj->maxHeap->size > obj->minHeap->size + 1) {
+        pushMinHeap(obj->minHeap, popMaxHeap(obj->maxHeap));
+    } else if (obj->minHeap->size > obj->maxHeap->size) {
+        pushMaxHeap(obj->maxHeap, popMinHeap(obj->minHeap));
+    }
+}
+
+double medianFinderFindMedian(MedianFinder* obj) {
+    if (obj->maxHeap->size > obj->minHeap->size) {
+        return (double)obj->maxHeap->data[0];
+    }
+    return (obj->maxHeap->data[0] + obj->minHeap->data[0]) / 2.0;
+}
+
+void medianFinderFree(MedianFinder* obj) {
+    free(obj->maxHeap->data);
+    free(obj->maxHeap);
+    free(obj->minHeap->data);
+    free(obj->minHeap);
+    free(obj);
+}
