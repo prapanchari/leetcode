@@ -1,0 +1,114 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+typedef struct {
+    int x;
+    int y;
+} Point;
+
+void appendPoint(Point* skyline, int* size, int x, int y) {
+    if (*size > 0 && skyline[*size - 1].y == y) {
+        return;
+    }
+    if (*size > 0 && skyline[*size - 1].x == x) {
+        skyline[*size - 1].y = y;
+        return;
+    }
+    skyline[*size].x = x;
+    skyline[*size].y = y;
+    (*size)++;
+}
+
+Point* mergeSkylines(Point* sky1, int size1, Point* sky2, int size2, int* returnSize) {
+    Point* merged = (Point*)malloc(sizeof(Point) * (size1 + size2));
+    int i = 0, j = 0, mergedSize = 0;
+    int h1 = 0, h2 = 0;
+
+    while (i < size1 && j < size2) {
+        int x, currentH;
+        
+        if (sky1[i].x < sky2[j].x) {
+            x = sky1[i].x;
+            h1 = sky1[i].y;
+            currentH = MAX(h1, h2);
+            i++;
+        } else if (sky1[i].x > sky2[j].x) {
+            x = sky2[j].x;
+            h2 = sky2[j].y;
+            currentH = MAX(h1, h2);
+            j++;
+        } else {
+            x = sky1[i].x;
+            h1 = sky1[i].y;
+            h2 = sky2[j].y;
+            currentH = MAX(h1, h2);
+            i++;
+            j++;
+        }
+        appendPoint(merged, &mergedSize, x, currentH);
+    }
+
+    while (i < size1) {
+        appendPoint(merged, &mergedSize, sky1[i].x, sky1[i].y);
+        i++;
+    }
+
+    while (j < size2) {
+        appendPoint(merged, &mergedSize, sky2[j].x, sky2[j].y);
+        j++;
+    }
+
+    *returnSize = mergedSize;
+    return merged;
+}
+
+Point* getSkylineRecursive(int** buildings, int start, int end, int* returnSize) {
+    if (start == end) {
+        Point* singleBuildingSkyline = (Point*)malloc(sizeof(Point) * 2);
+        singleBuildingSkyline[0].x = buildings[start][0];
+        singleBuildingSkyline[0].y = buildings[start][2];
+        singleBuildingSkyline[1].x = buildings[start][1];
+        singleBuildingSkyline[1].y = 0;
+        *returnSize = 2;
+        return singleBuildingSkyline;
+    }
+
+    int mid = start + (end - start) / 2;
+    int size1, size2;
+    
+    Point* sky1 = getSkylineRecursive(buildings, start, mid, &size1);
+    Point* sky2 = getSkylineRecursive(buildings, mid + 1, end, &size2);
+    
+    Point* merged = mergeSkylines(sky1, size1, sky2, size2, returnSize);
+    
+    free(sky1);
+    free(sky2);
+    
+    return merged;
+}
+
+int** getSkyline(int** buildings, int buildingsSize, int* buildingsColSize, int* returnSize, int** returnColumnSizes) {
+    if (buildingsSize == 0) {
+        *returnSize = 0;
+        return NULL;
+    }
+
+    int totalPoints = 0;
+    Point* resultPoints = getSkylineRecursive(buildings, 0, buildingsSize - 1, &totalPoints);
+
+    int** result = (int**)malloc(sizeof(int*) * totalPoints);
+    *returnColumnSizes = (int*)malloc(sizeof(int) * totalPoints);
+    *returnSize = totalPoints;
+
+    for (int i = 0; i < totalPoints; i++) {
+        result[i] = (int*)malloc(sizeof(int) * 2);
+        result[i][0] = resultPoints[i].x;
+        result[i][1] = resultPoints[i].y;
+        (*returnColumnSizes)[i] = 2;
+    }
+
+    free(resultPoints);
+    return result;
+}
