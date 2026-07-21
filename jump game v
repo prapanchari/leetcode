@@ -1,0 +1,46 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_VAL(a, b) ((a) > (b) ? (a) : (b))
+
+int dfs(int* arr, int arrSize, int d, int i, int* memo) {
+    if (memo[i] != 0) {
+        return memo[i];
+    }
+    
+    int max_jumps = 1;
+    
+    for (int x = 1; x <= d; x++) {
+        int j = i + x;
+        if (j >= arrSize) break;
+        if (arr[i] <= arr[j]) break; 
+        
+        max_jumps = MAX_VAL(max_jumps, 1 + dfs(arr, arrSize, d, j, memo));
+    }
+    
+    for (int x = 1; x <= d; x++) {
+        int j = i - x;
+        if (j < 0) break;
+        if (arr[i] <= arr[j]) break;
+        
+        max_jumps = MAX_VAL(max_jumps, 1 + dfs(arr, arrSize, d, j, memo));
+    }
+    
+    memo[i] = max_jumps;
+    return max_jumps;
+}
+
+int maxJumps(int* arr, int arrSize, int d) {
+    int* memo = (int*)calloc(arrSize, sizeof(int));
+    if (!memo) return 0;
+    
+    int max_visited = 0;
+    
+    for (int i = 0; i < arrSize; i++) {
+        max_visited = MAX_VAL(max_visited, dfs(arr, arrSize, d, i, memo));
+    }
+    
+    free(memo);
+    return max_visited;
+}
