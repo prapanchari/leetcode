@@ -1,0 +1,52 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
+int compareInts(const void* a, const void* b) {
+    return (*(int*)a - *(int*)b);
+}
+
+bool* subsequenceSumAfterCapping(int* nums, int numsSize, int k, int* returnSize) {
+    *returnSize = numsSize;
+    bool* answer = (bool*)malloc(numsSize * sizeof(bool));
+    
+    qsort(nums, numsSize, sizeof(int), compareInts);
+    
+    bool* dp = (bool*)calloc(k + 1, sizeof(bool));
+    dp[0] = true;
+    
+    int item_idx = 0;
+    
+    for (int x = 1; x <= numsSize; x++) {
+        while (item_idx < numsSize && nums[item_idx] <= x) {
+            int val = nums[item_idx];
+            for (int j = k; j >= val; j--) {
+                if (dp[j - val]) {
+                    dp[j] = true;
+                }
+            }
+            item_idx++;
+        }
+        
+        if (dp[k]) {
+            answer[x - 1] = true;
+            continue;
+        }
+        
+        int remaining_large_elements = numsSize - item_idx;
+        bool found = false;
+        
+        for (int t = 0; t <= remaining_large_elements && t * x <= k; t++) {
+            if (dp[k - t * x]) {
+                found = true;
+                break;
+            }
+        }
+        
+        answer[x - 1] = found;
+    }
+    
+    free(dp);
+    return answer;
+}
