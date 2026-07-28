@@ -1,0 +1,130 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+#define HASH_SIZE 20003
+
+typedef struct FileNode {
+    char* path;
+    struct FileNode* next;
+} FileNode;
+
+typedef struct HashNode {
+    char* content;
+    FileNode* files;
+    int file_count;
+    struct HashNode* next;
+} HashNode;
+
+typedef struct {
+    HashNode* buckets[HASH_SIZE];
+} HashMap;
+
+unsigned int get_hash(const char* str) {
+    unsigned int hash = 5381;
+    int c;
+    while ((c = *str++)) {
+        hash = ((hash << 5) + hash) + c;
+    }
+    return hash % HASH_SIZE;
+}
+
+HashNode* find_or_insert(HashMap* map, const char* content) {
+    unsigned int h = get_hash(content);
+    HashNode* curr = map->buckets[h];
+    while (curr) {
+        if (strcmp(curr->content, content) == 0) {
+            return curr;
+        }
+        curr = curr->next;
+    }
+    HashNode* newNode = (HashNode*)malloc(sizeof(HashNode));
+    newNode->content = strdup(content);
+    newNode->files = NULL;
+    newNode->file_count = 0;
+    newNode->next = map->buckets[h];
+    map->buckets[h] = newNode;
+    return newNode;
+}
+
+void add_file(HashNode* node, const char* dir, const char* filename) {
+    int len = strlen(dir) + strlen(filename) + 2;
+    char* full_path = (char*)malloc(len);
+    sprintf(full_path, "%s/%s", dir, filename);
+    
+    FileNode* newNode = (FileNode*)malloc(sizeof(FileNode));
+    newNode->path = full_path;
+    newNode->next = node->files;
+    node->files = newNode;
+    node->file_count++;
+}
+
+char*** findDuplicate(char** paths, int pathsSize, int* returnSize, int** returnColumnSizes) {
+    HashMap* map = (HashMap*)calloc(1, sizeof(HashMap));
+    
+    for (int i = 0; i < pathsSize; i++) {
+        char* line = strdup(paths[i]);
+        char* token = strtok(line, " ");
+        char* dir = token;
+        
+        token = strtok(NULL, " ");
+        while (token) {
+            char* open_paren = strchr(token, '(');
+            char* close_paren = strchr(token, ')');
+            
+            *open_paren = '\0';
+            *close_paren = '\0';
+            
+            char* filename = token;
+            char* content = open_paren + 1;
+            
+            HashNode* node = find_or_insert(map, content);
+            add_file(node, dir, filename);
+            
+            token = strtok(NULL, " ");
+        }
+        free(line);
+    }
+    
+    int capacity = 1000;
+    char*** result = (char***)malloc(capacity * sizeof(char**));
+    *returnColumnSizes = (int*)malloc(capacity * sizeof(int));
+    *returnSize = 0;
+    
+    for (int i = 0; i < HASH_SIZE; i++) {
+        HashNode* curr = map->buckets[i];
+        while (curr) {
+            if (curr->file_count > 1) {
+                if (*returnSize >= capacity) {
+                    capacity *= 2;
+                    result = (char***)realloc(result, capacity * sizeof(char**));
+                    *returnColumnSizes = (int*)realloc(*returnColumnSizes, capacity * sizeof(int));
+                }
+                
+                int count = curr->file_count;
+                (*returnColumnSizes)[*returnSize] = count;
+                result[*returnSize] = (char**)malloc(count * sizeof(char*));
+                
+                FileNode* f_curr = curr->files;
+                int idx = 0;
+                while (f_curr) {
+                    result[*returnSize][idx++] = f_curr->path;
+                    FileNode* tmp = f_curr;
+                    f_curr = f_curr->next;
+                    free(tmp);
+                }
+                (*returnSize)++;
+            } else if (curr->file_count == 1) {
+                free(curr->files->path);
+                free(curr->files);
+            }
+            HashNode* tmp_node = curr;
+            curr = curr->next;
+            free(tmp_node->content);
+            free(tmp_node);
+        }
+    }
+    free(map);
+    return result;
+}
