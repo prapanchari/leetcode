@@ -1,0 +1,100 @@
+#include <stdlib.h>
+#include <string.h>
+
+int compare_ints(const void* a, const void* b) {
+    return (*(int*)a - *(int*)b);
+}
+
+unsigned long long get_edge_key(int u, int v) {
+    if (u > v) {
+        int temp = u;
+        u = v;
+        v = temp;
+    }
+    return ((unsigned long long)u << 32) | (unsigned int)v;
+}
+
+typedef struct {
+    unsigned long long key;
+    int count;
+} EdgeMapEntry;
+
+int compare_entries(const void* a, const void* b) {
+    unsigned long long ka = ((EdgeMapEntry*)a)->key;
+    unsigned long long kb = ((EdgeMapEntry*)b)->key;
+    if (ka < kb) return -1;
+    if (ka > kb) return 1;
+    return 0;
+}
+
+int* countPairs(int n, int** edges, int edgesSize, int* edgesColSize, int* queries, int queriesSize, int* returnSize) {
+    int* degrees = (int*)calloc(n + 1, sizeof(int));
+    EdgeMapEntry* unique_edges = (EdgeMapEntry*)malloc(edgesSize * sizeof(EdgeMapEntry));
+    int unique_count = 0;
+
+    for (int i = 0; i < edgesSize; i++) {
+        int u = edges[i][0];
+        int v = edges[i][1];
+        degrees[u]++;
+        degrees[v]++;
+        unique_edges[i].key = get_edge_key(u, v);
+        unique_edges[i].count = 1;
+    }
+
+    qsort(unique_edges, edgesSize, sizeof(EdgeMapEntry), compare_entries);
+
+    if (edgesSize > 0) {
+        int write_idx = 0;
+        for (int i = 1; i < edgesSize; i++) {
+            if (unique_edges[i].key == unique_edges[write_idx].key) {
+                unique_edges[write_idx].count++;
+            } else {
+                write_idx++;
+                unique_edges[write_idx] = unique_edges[i];
+            }
+        }
+        unique_count = write_idx + 1;
+    }
+
+    int* sorted_degrees = (int*)malloc(n * sizeof(int));
+    for (int i = 1; i <= n; i++) {
+        sorted_degrees[i - 1] = degrees[i];
+    }
+    qsort(sorted_degrees, n, sizeof(int), compare_ints);
+
+    int* answers = (int*)malloc(queriesSize * sizeof(int));
+    *returnSize = queriesSize;
+
+    for (int q = 0; q < queriesSize; q++) {
+        int target = queries[q];
+        int pairs = 0;
+
+        int left = 0;
+        int right = n - 1;
+        while (left < right) {
+            if (sorted_degrees[left] + sorted_degrees[right] > target) {
+                pairs += (right - left);
+                right--;
+            } else {
+                left++;
+            }
+        }
+
+        for (int i = 0; i < unique_count; i++) {
+            unsigned long long key = unique_edges[i].key;
+            int u = (int)(key >> 32);
+            int v = (int)(key & 0xFFFFFFFF);
+            int shared = unique_edges[i].count;
+
+            if (degrees[u] + degrees[v] > target && degrees[u] + degrees[v] - shared <= target) {
+                pairs--;
+            }
+        }
+        answers[q] = pairs;
+    }
+
+    free(degrees);
+    free(unique_edges);
+    free(sorted_degrees);
+    return answers;
+}
