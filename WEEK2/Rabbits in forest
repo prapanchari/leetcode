@@ -1,0 +1,19 @@
+int numRabbits(int* answers, int answersSize) {
+    int counts[1000] = {0};
+    int minRabbits = 0;
+
+    for (int i = 0; i < answersSize; i++) {
+        counts[answers[i]]++;
+    }
+
+    for (int i = 0; i < 1000; i++) {
+        if (counts[i] > 0) {
+            int groupSize = i + 1;
+            int reportedCount = counts[i];
+            int groupsNeeded = (reportedCount + groupSize - 1) / groupSize;
+            minRabbits += groupsNeeded * groupSize;
+        }
+    }
+
+    return minRabbits;
+}
