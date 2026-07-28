@@ -1,0 +1,132 @@
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    int* data;
+    int size;
+} Stack;
+
+typedef struct {
+    int* data;
+    int size;
+    int capacity;
+} MinHeap;
+
+typedef struct {
+    int cap;
+    Stack* stacks;
+    int stacks_size;
+    int stacks_capacity;
+    MinHeap heap;
+} DinnerPlates;
+
+void heap_push(MinHeap* h, int val) {
+    if (h->size >= h->capacity) {
+        h->capacity = h->capacity == 0 ? 1024 : h->capacity * 2;
+        h->data = (int*)realloc(h->data, h->capacity * sizeof(int));
+    }
+    int i = h->size++;
+    while (i > 0) {
+        int p = (i - 1) / 2;
+        if (h->data[p] <= val) break;
+        h->data[i] = h->data[p];
+        i = p;
+    }
+    h->data[i] = val;
+}
+
+int heap_pop(MinHeap* h) {
+    if (h->size == 0) return -1;
+    int res = h->data[0];
+    int val = h->data[--h->size];
+    int i = 0;
+    while (i * 2 + 1 < h->size) {
+        int left = i * 2 + 1;
+        int right = left + 1;
+        int child = left;
+        if (right < h->size && h->data[right] < h->data[left]) {
+            child = right;
+        }
+        if (val <= h->data[child]) break;
+        h->data[i] = h->data[child];
+        i = child;
+    }
+    if (h->size > 0) h->data[i] = val;
+    return res;
+}
+
+int heap_top(MinHeap* h) {
+    if (h->size == 0) return -1;
+    return h->data[0];
+}
+
+DinnerPlates* dinnerPlatesCreate(int capacity) {
+    DinnerPlates* obj = (DinnerPlates*)malloc(sizeof(DinnerPlates));
+    obj->cap = capacity;
+    obj->stacks_size = 0;
+    obj->stacks_capacity = 1024;
+    obj->stacks = (Stack*)malloc(obj->stacks_capacity * sizeof(Stack));
+    obj->heap.size = 0;
+    obj->heap.capacity = 1024;
+    obj->heap.data = (int*)malloc(obj->heap.capacity * sizeof(int));
+    return obj;
+}
+
+void dinnerPlatesPush(DinnerPlates* obj, int val) {
+    while (obj->heap.size > 0 && heap_top(&obj->heap) >= obj->stacks_size) {
+        heap_pop(&obj->heap);
+    }
+    
+    if (obj->heap.size == 0) {
+        if (obj->stacks_size >= obj->stacks_capacity) {
+            obj->stacks_capacity *= 2;
+            obj->stacks = (Stack*)realloc(obj->stacks, obj->stacks_capacity * sizeof(Stack));
+        }
+        int idx = obj->stacks_size++;
+        obj->stacks[idx].data = (int*)malloc(obj->cap * sizeof(int));
+        obj->stacks[idx].data[0] = val;
+        obj->stacks[idx].size = 1;
+        if (obj->cap > 1) {
+            heap_push(&obj->heap, idx);
+        }
+    } else {
+        int idx = heap_top(&obj->heap);
+        obj->stacks[idx].data[obj->stacks[idx].size++] = val;
+        if (obj->stacks[idx].size == obj->cap) {
+            heap_pop(&obj->heap);
+        }
+    }
+}
+
+int dinnerPlatesPopAtStack(DinnerPlates* obj, int index) {
+    if (index < 0 || index >= obj->stacks_size || obj->stacks[index].size == 0) {
+        return -1;
+    }
+    int val = obj->stacks[index].data[--obj->stacks[index].size];
+    if (obj->stacks[index].size == obj->cap - 1) {
+        heap_push(&obj->heap, index);
+    }
+    return val;
+}
+
+int dinnerPlatesPop(DinnerPlates* obj) {
+    while (obj->stacks_size > 0 && obj->stacks[obj->stacks_size - 1].size == 0) {
+        free(obj->stacks[obj->stacks_size - 1].data);
+        obj->stacks_size--;
+    }
+    if (obj->stacks_size == 0) {
+        return -1;
+    }
+    return dinnerPlatesPopAtStack(obj, obj->stacks_size - 1);
+}
+
+void dinnerPlatesFree(DinnerPlates* obj) {
+    for (int i = 0; i < obj->stacks_size; i++) {
+        if (obj->stacks[i].size > 0 || obj->stacks[i].data != NULL) {
+            free(obj->stacks[i].data);
+        }
+    }
+    free(obj->stacks);
+    free(obj->heap.data);
+    free(obj);
+}
