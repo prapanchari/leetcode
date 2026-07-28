@@ -1,0 +1,105 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+typedef struct TrieNode {
+    struct TrieNode* children[27];
+    int weight;
+} TrieNode;
+
+typedef struct {
+    TrieNode* root;
+} WordFilter;
+
+TrieNode* createNode() {
+    TrieNode* node = (TrieNode*)malloc(sizeof(TrieNode));
+    node->weight = -1;
+    for (int i = 0; i < 27; i++) {
+        node->children[i] = NULL;
+    }
+    return node;
+}
+
+void insert(TrieNode* root, const char* key, int weight) {
+    TrieNode* curr = root;
+    while (*key) {
+        int index = *key - 'a';
+        if (index < 0 || index >= 27) {
+            index = 26; 
+        }
+        if (!curr->children[index]) {
+            curr->children[index] = createNode();
+        }
+        curr = curr->children[index];
+        curr->weight = weight;
+        key++;
+    }
+}
+
+WordFilter* wordFilterCreate(char** words, int wordsSize) {
+    WordFilter* filter = (WordFilter*)malloc(sizeof(WordFilter));
+    filter->root = createNode();
+    
+    char buffer[20];
+    for (int i = 0; i < wordsSize; i++) {
+        int len = strlen(words[i]);
+        for (int j = 0; j <= len; j++) {
+            int pos = 0;
+            for (int k = j; k < len; k++) {
+                buffer[pos++] = words[i][k];
+            }
+            buffer[pos++] = '{';
+            for (int k = 0; k < len; k++) {
+                buffer[pos++] = words[i][k];
+            }
+            buffer[pos] = '\0';
+            insert(filter->root, buffer, i);
+        }
+    }
+    return filter;
+}
+
+int wordFilterF(WordFilter* obj, char* pref, char* suff) {
+    char search_key[20];
+    int pos = 0;
+    
+    while (*suff) {
+        search_key[pos++] = *suff++;
+    }
+    search_key[pos++] = '{';
+    while (*pref) {
+        search_key[pos++] = *pref++;
+    }
+    search_key[pos] = '\0';
+    
+    TrieNode* curr = obj->root;
+    char* key = search_key;
+    while (*key) {
+        int index = *key - 'a';
+        if (index < 0 || index >= 27) {
+            index = 26;
+        }
+        if (!curr->children[index]) {
+            return -1;
+        }
+        curr = curr->children[index];
+        key++;
+    }
+    return curr->weight;
+}
+
+void freeTrie(TrieNode* node) {
+    if (!node) return;
+    for (int i = 0; i < 27; i++) {
+        if (node->children[i]) {
+            freeTrie(node->children[i]);
+        }
+    }
+    free(node);
+}
+
+void wordFilterFree(WordFilter* obj) {
+    if (!obj) return;
+    freeTrie(obj->root);
+    free(obj);
+}
