@@ -1,0 +1,98 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define HASH_SIZE 10007
+
+typedef struct HashNode {
+    char* str;
+    int count;
+    struct TreeNode* node;
+    struct HashNode* next;
+} HashNode;
+
+typedef struct {
+    HashNode* buckets[HASH_SIZE];
+} HashMap;
+
+unsigned int get_hash(const char* str) {
+    unsigned int hash = 5381;
+    int c;
+    while ((c = *str++)) {
+        hash = ((hash << 5) + hash) + c;
+    }
+    return hash % HASH_SIZE;
+}
+
+HashNode* find_or_insert(HashMap* map, const char* str, struct TreeNode* node) {
+    unsigned int h = get_hash(str);
+    HashNode* curr = map->buckets[h];
+    while (curr) {
+        if (strcmp(curr->str, str) == 0) {
+            curr->count++;
+            return curr;
+        }
+        curr = curr->next;
+    }
+    HashNode* newNode = (HashNode*)malloc(sizeof(HashNode));
+    newNode->str = strdup(str);
+    newNode->count = 1;
+    newNode->node = node;
+    newNode->next = map->buckets[h];
+    map->buckets[h] = newNode;
+    return newNode;
+}
+
+void free_map(HashMap* map) {
+    for (int i = 0; i < HASH_SIZE; i++) {
+        HashNode* curr = map->buckets[i];
+        while (curr) {
+            HashNode* tmp = curr;
+            curr = curr->next;
+            free(tmp->str);
+            free(tmp);
+        }
+    }
+}
+
+char* serialize(struct TreeNode* root, HashMap* map, struct TreeNode** result, int* returnSize) {
+    if (!root) {
+        return strdup("#");
+    }
+    
+    char* left_str = serialize(root->left, map, result, returnSize);
+    char* right_str = serialize(root->right, map, result, returnSize);
+    
+    char buf[64];
+    sprintf(buf, "%d,", root->val);
+    
+    int len = strlen(buf) + strlen(left_str) + strlen(right_str) + 2;
+    char* current_str = (char*)malloc(len);
+    strcpy(current_str, buf);
+    strcat(current_str, left_str);
+    strcat(current_str, ",");
+    strcat(current_str, right_str);
+    
+    free(left_str);
+    free(right_str);
+    
+    HashNode* resNode = find_or_insert(map, current_str, root);
+    if (resNode->count == 2) {
+        result[(*returnSize)++] = root;
+    }
+    
+    return current_str;
+}
+
+struct TreeNode** findDuplicateSubtrees(struct TreeNode* root, int* returnSize) {
+    *returnSize = 0;
+    struct TreeNode** result = (struct TreeNode**)malloc(5000 * sizeof(struct TreeNode*));
+    HashMap* map = (HashMap*)calloc(1, sizeof(HashMap));
+    
+    char* total_str = serialize(root, map, result, returnSize);
+    free(total_str);
+    free_map(map);
+    free(map);
+    
+    return result;
+}
