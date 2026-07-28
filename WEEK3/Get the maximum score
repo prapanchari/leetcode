@@ -1,0 +1,30 @@
+int maxSum(int* nums1, int nums1Size, int* nums2, int nums2Size) {
+    int i = 0, j = 0;
+    long long sum1 = 0, sum2 = 0;
+    long long total_max = 0;
+    long long mod = 1000000007;
+
+    while (i < nums1Size && j < nums2Size) {
+        if (nums1[i] < nums2[j]) {
+            sum1 += nums1[i++];
+        } else if (nums1[i] > nums2[j]) {
+            sum2 += nums2[j++];
+        } else {
+            total_max += (sum1 > sum2 ? sum1 : sum2) + nums1[i];
+            sum1 = 0;
+            sum2 = 0;
+            i++;
+            j++;
+        }
+    }
+
+    while (i < nums1Size) {
+        sum1 += nums1[i++];
+    }
+    while (j < nums2Size) {
+        sum2 += nums2[j++];
+    }
+
+    total_max += (sum1 > sum2 ? sum1 : sum2);
+    return total_max % mod;
+}
