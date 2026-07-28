@@ -1,0 +1,93 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+typedef struct Node {
+    int bus_id;
+    struct Node* next;
+} Node;
+
+int numBusesToDestination(int** routes, int routesSize, int* routesColSize, int source, int target) {
+    if (source == target) return 0;
+
+    int max_stop = source > target ? source : target;
+    for (int i = 0; i < routesSize; i++) {
+        for (int j = 0; j < routesColSize[i]; j++) {
+            if (routes[i][j] > max_stop) {
+                max_stop = routes[i][j];
+            }
+        }
+    }
+
+    Node** stop_to_buses = (Node**)calloc(max_stop + 1, sizeof(Node*));
+    int total_connections = 0;
+    for (int i = 0; i < routesSize; i++) {
+        total_connections += routesColSize[i];
+    }
+    
+    Node* pool = (Node*)malloc(total_connections * sizeof(Node));
+    int pool_idx = 0;
+
+    for (int i = 0; i < routesSize; i++) {
+        for (int j = 0; j < routesColSize[i]; j++) {
+            int stop = routes[i][j];
+            Node* newNode = &pool[pool_idx++];
+            newNode->bus_id = i;
+            newNode->next = stop_to_buses[stop];
+            stop_to_buses[stop] = newNode;
+        }
+    }
+
+    int* queue = (int*)malloc(routesSize * sizeof(int));
+    int head = 0, tail = 0;
+
+    bool* bus_visited = (bool*)calloc(routesSize, sizeof(bool));
+    bool* stop_visited = (bool*)calloc(max_stop + 1, sizeof(bool));
+
+    Node* curr = stop_to_buses[source];
+    while (curr) {
+        int bus_id = curr->bus_id;
+        bus_visited[bus_id] = true;
+        queue[tail++] = bus_id;
+        curr = curr->next;
+    }
+
+    int buses_taken = 1;
+    while (head < tail) {
+        int level_size = tail - head;
+        for (int i = 0; i < level_size; i++) {
+            int curr_bus = queue[head++];
+            for (int j = 0; j < routesColSize[curr_bus]; j++) {
+                int stop = routes[curr_bus][j];
+                if (stop == target) {
+                    free(stop_to_buses);
+                    free(pool);
+                    free(queue);
+                    free(bus_visited);
+                    free(stop_visited);
+                    return buses_taken;
+                }
+                if (!stop_visited[stop]) {
+                    stop_visited[stop] = true;
+                    Node* next_bus_node = stop_to_buses[stop];
+                    while (next_bus_node) {
+                        int next_bus = next_bus_node->bus_id;
+                        if (!bus_visited[next_bus]) {
+                            bus_visited[next_bus] = true;
+                            queue[tail++] = next_bus;
+                        }
+                        next_bus_node = next_bus_node->next;
+                    }
+                }
+            }
+        }
+        buses_taken++;
+    }
+
+    free(stop_to_buses);
+    free(pool);
+    free(queue);
+    free(bus_visited);
+    free(stop_visited);
+    return -1;
+}
