@@ -1,0 +1,24 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+char* removeOccurrences(char* s, char* part) {
+    int s_len = strlen(s);
+    int p_len = strlen(part);
+    
+    char* res = (char*)malloc((s_len + 1) * sizeof(char));
+    int top = 0;
+    
+    for (int i = 0; i < s_len; i++) {
+        res[top++] = s[i];
+        
+        if (top >= p_len) {
+            if (strncmp(&res[top - p_len], part, p_len) == 0) {
+                top -= p_len;
+            }
+        }
+    }
+    
+    res[top] = '\0';
+    return res;
+}
