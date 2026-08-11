@@ -1,0 +1,102 @@
+#include <stdlib.h>
+
+struct QueryNode {
+    int req_height;
+    int query_idx;
+    struct QueryNode* next;
+};
+
+struct HeapElement {
+    int req_height;
+    int query_idx;
+};
+
+struct HeapElement* heap;
+int heapSize = 0;
+
+void push(int req_height, int query_idx) {
+    int i = heapSize++;
+    while (i > 0) {
+        int p = (i - 1) / 2;
+        if (heap[p].req_height <= req_height) break;
+        heap[i] = heap[p];
+        i = p;
+    }
+    heap[i].req_height = req_height;
+    heap[i].query_idx = query_idx;
+}
+
+void pop() {
+    struct HeapElement last = heap[--heapSize];
+    int i = 0;
+    while (i * 2 + 1 < heapSize) {
+        int left = i * 2 + 1;
+        int right = left + 1;
+        int child = left;
+        if (right < heapSize && heap[right].req_height < heap[left].req_height) {
+            child = right;
+        }
+        if (last.req_height <= heap[child].req_height) break;
+        heap[i] = heap[child];
+        i = child;
+    }
+    if (heapSize > 0) {
+        heap[i] = last;
+    }
+}
+
+int* leftmostBuildingQueries(int* heights, int heightsSize, int** queries, int queriesSize, int* queriesColSize, int* returnSize) {
+    *returnSize = queriesSize;
+    int* ans = (int*)malloc(queriesSize * sizeof(int));
+    
+    struct QueryNode** deferred = (struct QueryNode**)calloc(heightsSize, sizeof(struct QueryNode*));
+    
+    heap = (struct HeapElement*)malloc(queriesSize * sizeof(struct HeapElement));
+    heapSize = 0;
+
+    for (int i = 0; i < queriesSize; i++) {
+        int a = queries[i][0];
+        int b = queries[i][1];
+        
+        if (a > b) {
+            int temp = a;
+            a = b;
+            b = temp;
+        }
+
+        if (a == b || heights[a] < heights[b]) {
+            ans[i] = b;
+        } else {
+            struct QueryNode* node = (struct QueryNode*)malloc(sizeof(struct QueryNode));
+            node->req_height = heights[a];
+            node->query_idx = i;
+            node->next = deferred[b];
+            deferred[b] = node;
+        }
+    }
+
+    for (int i = 0; i < heightsSize; i++) {
+        while (heapSize > 0 && heap[0].req_height < heights[i]) {
+            ans[heap[0].query_idx] = i;
+            pop();
+        }
+
+        struct QueryNode* curr = deferred[i];
+        while (curr != NULL) {
+            push(curr->req_height, curr->query_idx);
+            struct QueryNode* nextNode = curr->next;
+            free(curr);
+            curr = nextNode;
+        }
+    }
+
+    while (heapSize > 0) {
+        ans[heap[0].query_idx] = -1;
+        pop();
+    }
+
+    free(heap);
+    free(deferred);
+
+    return ans;
+}
