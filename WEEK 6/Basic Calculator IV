@@ -1,0 +1,248 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+typedef struct {
+    char vars[10][21];
+    int var_count;
+} TermKey;
+
+typedef struct {
+    TermKey key;
+    int coeff;
+} PolyTerm;
+
+typedef struct {
+    PolyTerm* terms;
+    int size;
+    int capacity;
+} Polynomial;
+
+typedef struct {
+    char name[21];
+    int val;
+} VarMap;
+
+VarMap g_map[100];
+int g_map_size = 0;
+
+int compare_strings(const void* a, const void* b) {
+    return strcmp((const char*)a, (const char*)b);
+}
+
+void sort_term_key(TermKey* key) {
+    if (key->var_count > 1) {
+        qsort(key->vars, key->var_count, sizeof(key->vars[0]), compare_strings);
+    }
+}
+
+int compare_keys(const TermKey* k1, const TermKey* k2) {
+    if (k1->var_count != k2->var_count) {
+        return k2->var_count - k1->var_count;
+    }
+    for (int i = 0; i < k1->var_count; i++) {
+        int cmp = strcmp(k1->vars[i], k2->vars[i]);
+        if (cmp != 0) return cmp;
+    }
+    return 0;
+}
+
+void init_poly(Polynomial* p) {
+    p->size = 0;
+    p->capacity = 8;
+    p->terms = (PolyTerm*)malloc(p->capacity * sizeof(PolyTerm));
+}
+
+void free_poly(Polynomial* p) {
+    free(p->terms);
+}
+
+void add_term(Polynomial* p, TermKey key, int coeff) {
+    if (coeff == 0) return;
+    sort_term_key(&key);
+    for (int i = 0; i < p->size; i++) {
+        if (compare_keys(&p->terms[i].key, &key) == 0) {
+            p->terms[i].coeff += coeff;
+            if (p->terms[i].coeff == 0) {
+                p->terms[i] = p->terms[p->size - 1];
+                p->size--;
+            }
+            return;
+        }
+    }
+    if (p->size >= p->capacity) {
+        p->capacity *= 2;
+        p->terms = (PolyTerm*)realloc(p->terms, p->capacity * sizeof(PolyTerm));
+    }
+    p->terms[p->size].key = key;
+    p->terms[p->size].coeff = coeff;
+    p->size++;
+}
+
+Polynomial poly_add(Polynomial p1, Polynomial p2) {
+    Polynomial res;
+    init_poly(&res);
+    for (int i = 0; i < p1.size; i++) {
+        add_term(&res, p1.terms[i].key, p1.terms[i].coeff);
+    }
+    for (int i = 0; i < p2.size; i++) {
+        add_term(&res, p2.terms[i].key, p2.terms[i].coeff);
+    }
+    return res;
+}
+
+Polynomial poly_sub(Polynomial p1, Polynomial p2) {
+    Polynomial res;
+    init_poly(&res);
+    for (int i = 0; i < p1.size; i++) {
+        add_term(&res, p1.terms[i].key, p1.terms[i].coeff);
+    }
+    for (int i = 0; i < p2.size; i++) {
+        add_term(&res, p2.terms[i].key, -p2.terms[i].coeff);
+    }
+    return res;
+}
+
+Polynomial poly_mul(Polynomial p1, Polynomial p2) {
+    Polynomial res;
+    init_poly(&res);
+    for (int i = 0; i < p1.size; i++) {
+        for (int j = 0; j < p2.size; j++) {
+            TermKey new_key;
+            new_key.var_count = p1.terms[i].key.var_count + p2.terms[j].key.var_count;
+            int idx = 0;
+            for (int k = 0; k < p1.terms[i].key.var_count; k++) {
+                strcpy(new_key.vars[idx++], p1.terms[i].key.vars[k]);
+            }
+            for (int k = 0; k < p2.terms[j].key.var_count; k++) {
+                strcpy(new_key.vars[idx++], p2.terms[j].key.vars[k]);
+            }
+            add_term(&res, new_key, p1.terms[i].coeff * p2.terms[j].coeff);
+        }
+    }
+    return res;
+}
+
+int compare_poly_terms(const void* a, const void* b) {
+    return compare_keys(&((PolyTerm*)a)->key, &((PolyTerm*)b)->key);
+}
+
+const char* ptr;
+
+Polynomial parse_expression();
+
+Polynomial parse_factor() {
+    Polynomial res;
+    init_poly(&res);
+    while (*ptr == ' ') ptr++;
+    if (*ptr == '(') {
+        ptr++; 
+        res = parse_expression();
+        while (*ptr == ' ') ptr++;
+        if (*ptr == ')') ptr++; 
+    } else if (isdigit(*ptr)) {
+        int val = 0;
+        while (isdigit(*ptr)) {
+            val = val * 10 + (*ptr - '0');
+            ptr++;
+        }
+        TermKey k;
+        k.var_count = 0;
+        add_term(&res, k, val);
+    } else if (isalpha(*ptr)) {
+        char name[21];
+        int idx = 0;
+        while (isalpha(*ptr)) {
+            name[idx++] = *ptr++;
+        }
+        name[idx] = '\0';
+        int found = 0;
+        int val = 0;
+        for (int i = 0; i < g_map_size; i++) {
+            if (strcmp(g_map[i].name, name) == 0) {
+                found = 1;
+                val = g_map[i].val;
+                break;
+            }
+        }
+        TermKey k;
+        if (found) {
+            k.var_count = 0;
+            add_term(&res, k, val);
+        } else {
+            k.var_count = 1;
+            strcpy(k.vars[0], name);
+            add_term(&res, k, 1);
+        }
+    }
+    return res;
+}
+
+Polynomial parse_term() {
+    Polynomial res = parse_factor();
+    while (1) {
+        while (*ptr == ' ') ptr++;
+        if (*ptr == '*') {
+            ptr++;
+            Polynomial next_fac = parse_factor();
+            Polynomial tmp = poly_mul(res, next_fac);
+            free_poly(&res);
+            free_poly(&next_fac);
+            res = tmp;
+        } else {
+            break;
+        }
+    }
+    return res;
+}
+
+Polynomial parse_expression() {
+    Polynomial res = parse_term();
+    while (1) {
+        while (*ptr == ' ') ptr++;
+        if (*ptr == '+' || *ptr == '-') {
+            char op = *ptr;
+            ptr++;
+            Polynomial next_term = parse_term();
+            Polynomial tmp = (op == '+') ? poly_add(res, next_term) : poly_sub(res, next_term);
+            free_poly(&res);
+            free_poly(&next_term);
+            res = tmp;
+        } else {
+            break;
+        }
+    }
+    return res;
+}
+
+char** uppercase_tokens(Polynomial p, int* returnSize) {
+    if (p.size > 1) {
+        qsort(p.terms, p.size, sizeof(PolyTerm), compare_poly_terms);
+    }
+    char** ans = (char**)malloc(p.size * sizeof(char*));
+    *returnSize = p.size;
+    for (int i = 0; i < p.size; i++) {
+        char buf[500];
+        sprintf(buf, "%d", p.terms[i].coeff);
+        for (int j = 0; j < p.terms[i].key.var_count; j++) {
+            strcat(buf, "*");
+            strcat(buf, p.terms[i].key.vars[j]);
+        }
+        ans[i] = strdup(buf);
+    }
+    return ans;
+}
+
+char** basicCalculatorIV(char* expression, char** evalvars, int evalvarsSize, int* evalints, int evalintsSize, int* returnSize) {
+    g_map_size = evalvarsSize;
+    for (int i = 0; i < evalvarsSize; i++) {
+        strcpy(g_map[i].name, evalvars[i]);
+        g_map[i].val = evalints[i];
+    }
+    ptr = expression;
+    Polynomial final_poly = parse_expression();
+    char** result = uppercase_tokens(final_poly, returnSize);
+    free_poly(&final_poly);
+    return result;
+}
