@@ -1,0 +1,46 @@
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+char* decodeString(char* s) {
+    int s_len = strlen(s);
+    int capacity = 100005;
+    char* res = (char*)malloc(capacity * sizeof(char));
+    int res_idx = 0;
+    
+    int num_stack[100];
+    int idx_stack[100];
+    int num_top = -1;
+    int idx_top = -1;
+    
+    int i = 0;
+    while (i < s_len) {
+        if (isdigit(s[i])) {
+            int num = 0;
+            while (isdigit(s[i])) {
+                num = num * 10 + (s[i] - '0');
+                i++;
+            }
+            num_stack[++num_top] = num;
+        } else if (s[i] == '[') {
+            idx_stack[++idx_top] = res_idx;
+            i++;
+        } else if (s[i] == ']') {
+            int repeat = num_stack[num_top--];
+            int start_idx = idx_stack[idx_top--];
+            int pattern_len = res_idx - start_idx;
+            
+            for (int r = 0; r < repeat - 1; r++) {
+                for (int p = 0; p < pattern_len; p++) {
+                    res[res_idx++] = res[start_idx + p];
+                }
+            }
+            i++;
+        } else {
+            res[res_idx++] = s[i++];
+        }
+    }
+    
+    res[res_idx] = '\0';
+    return res;
+}
