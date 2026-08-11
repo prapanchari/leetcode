@@ -1,0 +1,67 @@
+#include <stdlib.h>
+#include <string.h>
+
+int* maxArray(int* nums, int size, int k) {
+    int* res = (int*)malloc(k * sizeof(int));
+    int top = -1;
+    int remain = size - k;
+    for (int i = 0; i < size; i++) {
+        while (top >= 0 && res[top] < nums[i] && remain > 0) {
+            top--;
+            remain--;
+        }
+        if (top < k - 1) {
+            res[++top] = nums[i];
+        } else {
+            remain--;
+        }
+    }
+    return res;
+}
+
+int compareArrays(int* nums1, int size1, int i, int* nums2, int size2, int j) {
+    while (i < size1 && j < size2) {
+        if (nums1[i] > nums2[j]) return 1;
+        if (nums1[i] < nums2[j]) return -1;
+        i++;
+        j++;
+    }
+    return (i < size1) ? 1 : ((j < size2) ? -1 : 0);
+}
+
+int* mergeArrays(int* nums1, int size1, int* nums2, int size2, int k) {
+    int* res = (int*)malloc(k * sizeof(int));
+    int i = 0, j = 0, r = 0;
+    while (r < k) {
+        if (compareArrays(nums1, size1, i, nums2, size2, j) > 0) {
+            res[r++] = nums1[i++];
+        } else {
+            res[r++] = nums2[j++];
+        }
+    }
+    return res;
+}
+
+int* maxNumber(int* nums1, int nums1Size, int* nums2, int nums2Size, int k, int* returnSize) {
+    *returnSize = k;
+    int* maxRes = (int*)calloc(k, sizeof(int));
+    
+    int start = (k - nums2Size > 0) ? k - nums2Size : 0;
+    int end = (k < nums1Size) ? k : nums1Size;
+    
+    for (int i = start; i <= end; i++) {
+        int* sub1 = maxArray(nums1, nums1Size, i);
+        int* sub2 = maxArray(nums2, nums2Size, k - i);
+        int* candidate = mergeArrays(sub1, i, sub2, k - i, k);
+        
+        if (compareArrays(candidate, k, 0, maxRes, k, 0) > 0) {
+            memcpy(maxRes, candidate, k * sizeof(int));
+        }
+        
+        free(sub1);
+        free(sub2);
+        free(candidate);
+    }
+    
+    return maxRes;
+}
