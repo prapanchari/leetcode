@@ -1,0 +1,92 @@
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    char* word;
+    int id;
+} WordMap;
+
+int compareWords(const void* a, const void* b) {
+    return strcmp(((WordMap*)a)->word, ((WordMap*)b)->word);
+}
+
+int compareSearch(const void* key, const void* element) {
+    return strcmp((char*)key, ((WordMap*)element)->word);
+}
+
+int* findSubstring(char* s, char** words, int wordsSize, int* returnSize) {
+    *returnSize = 0;
+    int s_len = strlen(s);
+    int word_len = strlen(words[0]);
+    int total_words_len = wordsSize * word_len;
+
+    if (s_len < total_words_len) return NULL;
+
+    WordMap* original_map = malloc(wordsSize * sizeof(WordMap));
+    for (int i = 0; i < wordsSize; i++) {
+        original_map[i].word = words[i];
+        original_map[i].id = -1;
+    }
+    qsort(original_map, wordsSize, sizeof(WordMap), compareWords);
+
+    int unique_count = 0;
+    for (int i = 0; i < wordsSize; i++) {
+        if (i == 0 || strcmp(original_map[i].word, original_map[i - 1].word) != 0) {
+            original_map[i].id = unique_count++;
+        } else {
+            original_map[i].id = original_map[i - 1].id;
+        }
+    }
+
+    int* word_counts = calloc(unique_count, sizeof(int));
+    for (int i = 0; i < wordsSize; i++) {
+        word_counts[original_map[i].id]++;
+    }
+
+    int* result = malloc(s_len * sizeof(int));
+    int* current_counts = malloc(unique_count * sizeof(int));
+    char* temp_word = malloc((word_len + 1) * sizeof(char));
+
+    for (int i = 0; i < word_len; i++) {
+        int left = i;
+        int count = 0;
+        memset(current_counts, 0, unique_count * sizeof(int));
+
+        for (int right = i; right + word_len <= s_len; right += word_len) {
+            strncpy(temp_word, s + right, word_len);
+            temp_word[word_len] = '\0';
+
+            WordMap* found = bsearch(temp_word, original_map, wordsSize, sizeof(WordMap), compareSearch);
+
+            if (found != NULL) {
+                int id = found->id;
+                current_counts[id]++;
+                count++;
+
+                while (current_counts[id] > word_counts[id]) {
+                    strncpy(temp_word, s + left, word_len);
+                    temp_word[word_len] = '\0';
+                    WordMap* out_found = bsearch(temp_word, original_map, wordsSize, sizeof(WordMap), compareSearch);
+                    current_counts[out_found->id]--;
+                    count--;
+                    left += word_len;
+                }
+
+                if (count == wordsSize) {
+                    result[(*returnSize)++] = left;
+                }
+            } else {
+                memset(current_counts, 0, unique_count * sizeof(int));
+                count = 0;
+                left = right + word_len;
+            }
+        }
+    }
+
+    free(original_map);
+    free(word_counts);
+    free(current_counts);
+    free(temp_word);
+
+    return result;
+}
