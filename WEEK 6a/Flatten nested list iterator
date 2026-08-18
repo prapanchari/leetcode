@@ -1,0 +1,41 @@
+#include <stdbool.h>
+#include <stdlib.h>
+
+struct NestedIterator {
+    int* data;
+    int size;
+    int index;
+};
+
+void flatten(struct NestedInteger** list, int size, int* arr, int* count) {
+    for (int i = 0; i < size; i++) {
+        if (NestedIntegerIsInteger(list[i])) {
+            arr[(*count)++] = NestedIntegerGetInteger(list[i]);
+        } else {
+            flatten(NestedIntegerGetList(list[i]), NestedIntegerGetListSize(list[i]), arr, count);
+        }
+    }
+}
+
+struct NestedIterator *nestedIterCreate(struct NestedInteger** nestedList, int nestedListSize) {
+    struct NestedIterator *iterator = (struct NestedIterator*)malloc(sizeof(struct NestedIterator));
+    iterator->data = (int*)malloc(500000 * sizeof(int));
+    iterator->size = 0;
+    iterator->index = 0;
+    
+    flatten(nestedList, nestedListSize, iterator->data, &(iterator->size));
+    return iterator;
+}
+
+int nestedIterNext(struct NestedIterator *iter) {
+    return iter->data[iter->index++];
+}
+
+bool nestedIterHasNext(struct NestedIterator *iter) {
+    return iter->index < iter->size;
+}
+
+void nestedIterFree(struct NestedIterator *iter) {
+    free(iter->data);
+    free(iter);
+}
