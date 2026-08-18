@@ -1,0 +1,33 @@
+#include <stdlib.h>
+
+int compare(const void *a, const void *b) {
+    return (*(int*)a - *(int*)b);
+}
+
+int* deckRevealedIncreasing(int* deck, int deckSize, int* returnSize) {
+    qsort(deck, deckSize, sizeof(int), compare);
+    
+    int* result = (int*)malloc(deckSize * sizeof(int));
+    *returnSize = deckSize;
+    
+    int* queue = (int*)malloc(deckSize * 2 * sizeof(int));
+    int head = 0;
+    int tail = 0;
+    
+    for (int i = 0; i < deckSize; i++) {
+        queue[tail++] = i;
+    }
+    
+    for (int i = 0; i < deckSize; i++) {
+        int targetIndex = queue[head++];
+        result[targetIndex] = deck[i];
+        
+        if (head < tail) {
+            queue[tail++] = queue[head++];
+        }
+    }
+    
+    free(queue);
+    
+    return result;
+}
