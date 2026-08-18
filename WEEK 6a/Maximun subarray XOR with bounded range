@@ -1,0 +1,100 @@
+#include <stdlib.h>
+
+typedef struct {
+    int next[2];
+    int count;
+} TrieNode;
+
+void insert(TrieNode* trie, int* node_count, int val) {
+    int curr = 0;
+    for (int i = 15; i >= 0; i--) {
+        int bit = (val >> i) & 1;
+        if (trie[curr].next[bit] == 0) {
+            trie[curr].next[bit] = (*node_count)++;
+        }
+        curr = trie[curr].next[bit];
+        trie[curr].count++;
+    }
+}
+
+void remove_val(TrieNode* trie, int val) {
+    int curr = 0;
+    for (int i = 15; i >= 0; i--) {
+        int bit = (val >> i) & 1;
+        curr = trie[curr].next[bit];
+        trie[curr].count--;
+    }
+}
+
+int query(TrieNode* trie, int val) {
+    int curr = 0;
+    int ans = 0;
+    for (int i = 15; i >= 0; i--) {
+        int bit = (val >> i) & 1;
+        int opp = 1 - bit;
+        if (trie[curr].next[opp] != 0 && trie[trie[curr].next[opp]].count > 0) {
+            ans |= (1 << i);
+            curr = trie[curr].next[opp];
+        } else if (trie[curr].next[bit] != 0 && trie[trie[curr].next[bit]].count > 0) {
+            curr = trie[curr].next[bit];
+        } else {
+            return 0;
+        }
+    }
+    return ans;
+}
+
+int maxXor(int* nums, int numsSize, int k) {
+    int n = numsSize;
+    int* pref = (int*)malloc((n + 1) * sizeof(int));
+    pref[0] = 0;
+    for (int i = 0; i < n; i++) {
+        pref[i + 1] = pref[i] ^ nums[i];
+    }
+
+    int max_nodes = (n + 1) * 18;
+    TrieNode* trie = (TrieNode*)calloc(max_nodes, sizeof(TrieNode));
+    int node_count = 1;
+
+    int* max_dq = (int*)malloc(n * sizeof(int));
+    int* min_dq = (int*)malloc(n * sizeof(int));
+    int max_head = 0, max_tail = 0;
+    int min_head = 0, min_tail = 0;
+
+    int l = 0;
+    int max_xor = 0;
+
+    for (int r = 0; r < n; r++) {
+        while (max_head < max_tail && nums[max_dq[max_tail - 1]] <= nums[r]) {
+            max_tail--;
+        }
+        max_dq[max_tail++] = r;
+
+        while (min_head < min_tail && nums[min_dq[min_tail - 1]] >= nums[r]) {
+            min_tail--;
+        }
+        min_dq[min_tail++] = r;
+
+        insert(trie, &node_count, pref[r]);
+
+        while (nums[max_dq[max_head]] - nums[min_dq[min_head]] > k) {
+            remove_val(trie, pref[l]);
+            l++;
+            if (max_dq[max_head] < l) {
+                max_head++;
+            }
+            if (min_dq[min_head] < l) {
+                min_head++;
+            }
+        }
+
+        max_xor = MAX(max_xor, query(trie, pref[r + 1]));
+    }
+
+    free(pref);
+    free(trie);
+    free(max_dq);
+    free(min_dq);
+
+    return max_xor;
+}
