@@ -1,0 +1,40 @@
+#include <stdlib.h>
+#include <limits.h>
+
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+int findMaxValueOfEquation(int** points, int pointsSize, int* pointsColSize, int k) {
+    int max_val = INT_MIN;
+    
+    int* deque = malloc(pointsSize * sizeof(int));
+    int head = 0;
+    int tail = 0;
+    
+    for (int j = 0; j < pointsSize; j++) {
+        int xj = points[j][0];
+        int yj = points[j][1];
+        
+        while (head < tail && xj - points[deque[head]][0] > k) {
+            head++;
+        }
+        
+        if (head < tail) {
+            int i = deque[head];
+            max_val = MAX(max_val, points[i][1] - points[i][0] + yj + xj);
+        }
+        
+        while (head < tail) {
+            int prev_i = deque[tail - 1];
+            if (points[prev_i][1] - points[prev_i][0] <= yj - xj) {
+                tail--;
+            } else {
+                break;
+            }
+        }
+        
+        deque[tail++] = j;
+    }
+    
+    free(deque);
+    return max_val;
+}
