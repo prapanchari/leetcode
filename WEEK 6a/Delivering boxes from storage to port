@@ -1,0 +1,56 @@
+#include <stdlib.h>
+
+int boxDelivering(int** boxes, int boxesSize, int* boxesColSize, int portsCount, int maxBoxes, int maxWeight) {
+    int n = boxesSize;
+    
+    long long* W = (long long*)calloc(n + 1, sizeof(long long));
+    int* B = (int*)calloc(n + 1, sizeof(int));
+    int* dp = (int*)calloc(n + 1, sizeof(int));
+    
+    for (int i = 1; i <= n; i++) {
+        W[i] = W[i - 1] + boxes[i - 1][1];
+        B[i] = B[i - 1];
+        if (i > 1 && boxes[i - 1][0] != boxes[i - 2][0]) {
+            B[i]++;
+        }
+    }
+    
+    int* deque = (int*)malloc((n + 1) * sizeof(int));
+    int head = 0, tail = 0;
+    
+    deque[tail++] = 0;
+    
+    for (int i = 1; i <= n; i++) {
+        while (head < tail && (i - deque[head] > maxBoxes || W[i] - W[deque[head]] > maxWeight)) {
+            head++;
+        }
+        
+        if (head < tail) {
+            int j = deque[head];
+            dp[i] = dp[j] + B[i] - B[j + 1] + 2;
+        }
+        
+        if (i < n) {
+            long long current_val = (long long)dp[i] - B[i + 1];
+            while (head < tail) {
+                int prev_j = deque[tail - 1];
+                long long prev_val = (long long)dp[prev_j] - B[prev_j + 1];
+                if (prev_val >= current_val) {
+                    tail--;
+                } else {
+                    break;
+                }
+            }
+            deque[tail++] = i;
+        }
+    }
+    
+    int result = dp[n];
+    
+    free(W);
+    free(B);
+    free(dp);
+    free(deque);
+    
+    return result;
+}
