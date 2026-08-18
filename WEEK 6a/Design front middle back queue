@@ -1,0 +1,69 @@
+#include <stdlib.h>
+
+typedef struct {
+    int* items;
+    int count;
+} FrontMiddleBackQueue;
+
+FrontMiddleBackQueue* frontMiddleBackQueueCreate() {
+    FrontMiddleBackQueue* q = malloc(sizeof(FrontMiddleBackQueue));
+    q->items = malloc(2005 * sizeof(int));
+    q->count = 0;
+    return q;
+}
+
+void frontMiddleBackQueuePushFront(FrontMiddleBackQueue* obj, int val) {
+    for (int i = obj->count; i > 0; i--) {
+        obj->items[i] = obj->items[i - 1];
+    }
+    obj->items[0] = val;
+    obj->count++;
+}
+
+void frontMiddleBackQueuePushMiddle(FrontMiddleBackQueue* obj, int val) {
+    int mid = obj->count / 2;
+    for (int i = obj->count; i > mid; i--) {
+        obj->items[i] = obj->items[i - 1];
+    }
+    obj->items[mid] = val;
+    obj->count++;
+}
+
+void frontMiddleBackQueuePushBack(FrontMiddleBackQueue* obj, int val) {
+    obj->items[obj->count++] = val;
+}
+
+int frontMiddleBackQueuePopFront(FrontMiddleBackQueue* obj) {
+    if (obj->count == 0) return -1;
+    
+    int result = obj->items[0];
+    for (int i = 0; i < obj->count - 1; i++) {
+        obj->items[i] = obj->items[i + 1];
+    }
+    obj->count--;
+    return result;
+}
+
+int frontMiddleBackQueuePopMiddle(FrontMiddleBackQueue* obj) {
+    if (obj->count == 0) return -1;
+    
+    int mid = (obj->count - 1) / 2;
+    int result = obj->items[mid];
+    for (int i = mid; i < obj->count - 1; i++) {
+        obj->items[i] = obj->items[i + 1];
+    }
+    obj->count--;
+    return result;
+}
+
+int frontMiddleBackQueuePopBack(FrontMiddleBackQueue* obj) {
+    if (obj->count == 0) return -1;
+    return obj->items[--obj->count];
+}
+
+void frontMiddleBackQueueFree(FrontMiddleBackQueue* obj) {
+    if (obj) {
+        free(obj->items);
+        free(obj);
+    }
+}
