@@ -1,0 +1,65 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+struct TreeNode** memo[21] = {NULL};
+int memoSizes[21] = {0};
+
+struct TreeNode* createNode(int val) {
+    struct TreeNode* node = (struct TreeNode*)malloc(sizeof(struct TreeNode));
+    node->val = val;
+    node->left = NULL;
+    node->right = NULL;
+    return node;
+}
+
+struct TreeNode** allPossibleFBT(int n, int* returnSize) {
+    if (n % 2 == 0) {
+        *returnSize = 0;
+        return NULL;
+    }
+
+    if (memoSizes[n] > 0) {
+        *returnSize = memoSizes[n];
+        return memo[n];
+    }
+
+    struct TreeNode** result = NULL;
+    int count = 0;
+
+    if (n == 1) {
+        result = (struct TreeNode**)malloc(sizeof(struct TreeNode*));
+        result[0] = createNode(0);
+        count = 1;
+    } else {
+        int capacity = 10;
+        result = (struct TreeNode**)malloc(capacity * sizeof(struct TreeNode*));
+
+        for (int i = 1; i < n; i += 2) {
+            int leftSize = 0;
+            struct TreeNode** leftSubtrees = allPossibleFBT(i, &leftSize);
+
+            int rightSize = 0;
+            struct TreeNode** rightSubtrees = allPossibleFBT(n - 1 - i, &rightSize);
+
+            for (int l = 0; l < leftSize; l++) {
+                for (int r = 0; r < rightSize; r++) {
+                    struct TreeNode* root = createNode(0);
+                    root->left = leftSubtrees[l];
+                    root->right = rightSubtrees[r];
+
+                    if (count >= capacity) {
+                        capacity *= 2;
+                        result = (struct TreeNode**)realloc(result, capacity * sizeof(struct TreeNode*));
+                    }
+                    result[count++] = root;
+                }
+            }
+        }
+    }
+
+    memoSizes[n] = count;
+    memo[n] = result;
+
+    *returnSize = count;
+    return result;
+}
