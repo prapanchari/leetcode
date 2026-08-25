@@ -1,0 +1,19 @@
+#include <stdio.h>
+#include <stdbool.h>
+
+long long lastInteger(long long n) {
+    long long head = 1;
+    long long step = 1;
+    bool left_to_right = true;
+
+    while (n > 1) {
+        if (!left_to_right && (n % 2 == 0)) {
+            head += step;
+        }
+        step *= 2;
+        n = (n + 1) / 2;
+        left_to_right = !left_to_right;
+    }
+
+    return head;
+}
