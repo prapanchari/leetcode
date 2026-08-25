@@ -1,0 +1,59 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+int calculate(char* s) {
+    int len = strlen(s);
+    
+    // Stacks to store historical results and signs when encountering '('
+    int* resultStack = (int*)malloc(len * sizeof(int));
+    int* signStack = (int*)malloc(len * sizeof(int));
+    int stackTop = 0;
+
+    int currentResult = 0;
+    int sign = 1; // 1 means '+', -1 means '-'
+
+    for (int i = 0; i < len; i++) {
+        char c = s[i];
+
+        if (isdigit(c)) {
+            long long num = 0;
+            // Parse full multi-digit number
+            while (i < len && isdigit(s[i])) {
+                num = num * 10 + (s[i] - '0');
+                i++;
+            }
+            i--; // Move pointer back to the last digit index
+            currentResult += sign * num;
+        } 
+        else if (c == '+') {
+            sign = 1;
+        } 
+        else if (c == '-') {
+            sign = -1;
+        } 
+        else if (c == '(') {
+            // Push current context to the stacks
+            resultStack[stackTop] = currentResult;
+            signStack[stackTop] = sign;
+            stackTop++;
+            
+            // Reset context for the inner expression
+            currentResult = 0;
+            sign = 1;
+        } 
+        else if (c == ')') {
+            stackTop--;
+            int prevSign = signStack[stackTop];
+            int prevResult = resultStack[stackTop];
+            
+            // Resolve the parenthesis block value
+            currentResult = prevResult + (prevSign * currentResult);
+        }
+    }
+
+    free(resultStack);
+    free(signStack);
+    return currentResult;
+}
